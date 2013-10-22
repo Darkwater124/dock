@@ -1,0 +1,19 @@
+#!/bin/bash
+
+case $1 in
+    ''|'-h'|'--help'|'-?'|'help')
+        echo 'Usage: dock <action> [options]'
+        echo
+        echo 'Actions:'
+        echo '  left|right      dock window to take up either 50% of the screen'
+        echo '  maximize        maximize window'
+        ;;
+esac
+
+ACT_WIN="`xprop -root 32x '\t$0' _NET_ACTIVE_WINDOW | cut -f 2`"
+
+case $1 in
+    'left')
+        wmctrl -i -r "$ACT_WIN" -e 0,0,0,960,1080
+        ;;
+esac
