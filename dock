@@ -1,19 +1,37 @@
-#!/bin/bash
+#!/usr/bin/lua
 
-case $1 in
-    ''|'-h'|'--help'|'-?'|'help')
-        echo 'Usage: dock <action> [options]'
-        echo
-        echo 'Actions:'
-        echo '  left|right      dock window to take up either 50% of the screen'
-        echo '  maximize        maximize window'
-        ;;
-esac
 
-ACT_WIN="`xprop -root 32x '\t$0' _NET_ACTIVE_WINDOW | cut -f 2`"
+local usage = [[
+Usage: dock <action> [options]
 
-case $1 in
-    'left')
-        wmctrl -i -r "$ACT_WIN" -e 0,0,0,960,1080
-        ;;
-esac
+Actions:
+  left|right      dock window to take up either half of the screen
+  maximize        maximize window
+]]
+
+function trim(s)
+    local from = s:match"^%s*()"
+    return from > #s and "" or s:match(".*%S", from)
+end
+
+function execute(cmd, _t)
+    local out = io.popen(cmd):read("*a")
+    if _t then
+        out = trim(out)
+    end
+    return out
+end
+
+
+local curwin = execute("xprop -root 32x '\t$0' _NET_ACTIVE_WINDOW | cut -f 2", true)
+
+function position(win, x, y, w, h)
+    execute(("wmctrl -i -r '%s' -e 0,%d,%d,%d,%d"):format(win, x, y, w, h))
+end
+
+
+
+local margins = {10, 40, 60, 80} -- left top right bottom
+local padding = 20
+
+position(curwin, margins[1], margins[2], 300, 500)
