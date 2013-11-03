@@ -1,12 +1,29 @@
 #!/usr/bin/lua
 
 
+
+local margins = {50, 20, 50, 50} -- left top right bottom
+local spacing = 20
+
+
+
 local usage = [[
 Usage: dock <action> [options]
 
 Actions:
-  left|right      dock window to take up either half of the screen
-  maximize        maximize window
+  left            dock window to take up either half of the screen
+  right
+
+  lefttop         dock window to take up a corner of the screen
+  righttop
+  leftbottom
+  rightbottom
+
+  maximize        maximize window (fullscreen)
+
+  large           maximize window (respect margins)
+  medium          66% of large
+  small           33% of large
 ]]
 
 function trim(s)
@@ -22,16 +39,140 @@ function execute(cmd, _t)
     return out
 end
 
-
-local curwin = execute("xprop -root 32x '\t$0' _NET_ACTIVE_WINDOW | cut -f 2", true)
-
 function position(win, x, y, w, h)
     execute(("wmctrl -i -r '%s' -e 0,%d,%d,%d,%d"):format(win, x, y, w, h))
 end
 
 
+local curwin = execute("xprop -root 32x '\t$0' _NET_ACTIVE_WINDOW | cut -f 2", true)
 
-local margins = {10, 40, 60, 80} -- left top right bottom
-local padding = 20
 
-position(curwin, margins[1], margins[2], 300, 500)
+local screens = {}
+local p = io.popen("xrandr --current | grep -oE '[0-9]+x[0-9]+\\+[0-9]+\\+[0-9]+'")
+for screen in p:lines() do
+    local t = {}
+    for part in screen:gmatch("%d+") do
+        table.insert(t, tonumber(part))
+    end
+    table.insert(screens, {
+        w = t[1],
+        h = t[2],
+        x = t[3],
+        y = t[4]
+    })
+end
+
+
+local curwingeom = {}
+local p = io.popen("xwininfo -id $(xdotool getactivewindow) | " ..
+    "sed -n -e \"s/^ \\+Absolute upper-left X: \\+\\([0-9]\\+\\).*/\\1/p\"" ..
+    "       -e \"s/^ \\+Absolute upper-left Y: \\+\\([0-9]\\+\\).*/\\1/p\"" ..
+    "       -e \"s/^ \\+Width: \\+\\([0-9]\\+\\).*/\\1/p\"" ..
+    "       -e \"s/^ \\+Height: \\+\\([0-9]\\+\\).*/\\1/p\"")
+for param in p:lines() do
+    table.insert(curwingeom, tonumber(param))
+end
+curwingeom.x = curwingeom[1]
+curwingeom.y = curwingeom[2]
+curwingeom.w = curwingeom[3]
+curwingeom.h = curwingeom[4]
+curwingeom.cx = curwingeom.x + curwingeom.w / 2
+curwingeom.cy = curwingeom.y + curwingeom.h / 2
+
+
+
+local activescreen = 1
+for k,v in pairs(screens) do
+    if curwingeom.cx > v.x and curwingeom.cy > v.y and curwingeom.cx < v.x + v.w and curwingeom.cy < v.y + v.h then
+        activescreen = k
+        break
+    end
+end
+
+
+local borders = {
+    left   = screens[activescreen].x + margins[1],
+    top    = screens[activescreen].y + margins[2],
+    right  = screens[activescreen].x + screens[activescreen].w - margins[3],
+    bottom = screens[activescreen].y + screens[activescreen].h - margins[4]
+}
+borders.width = borders.right - borders.left
+borders.height = borders.bottom - borders.top
+
+local methods = {
+    left = function ()
+        left   = borders.left
+        top    = borders.top
+        width  = borders.width / 2 - spacing / 2
+        height = borders.height
+        position(curwin, left, top, width, height)
+    end,
+    right = function ()
+        left   = borders.left + borders.width / 2 + spacing / 2
+        top    = borders.top
+        width  = borders.width / 2 - spacing / 2
+        height = borders.bottom - borders.top
+        position(curwin, left, top, width, height)
+    end,
+    lefttop = function ()
+        left   = borders.left
+        top    = borders.top
+        width  = borders.width / 2 - spacing / 2
+        height = borders.height / 2 - spacing / 2
+        position(curwin, left, top, width, height)
+    end,
+    leftbottom = function ()
+        left   = borders.left
+        top    = borders.top + borders.height / 2 + spacing / 2
+        width  = borders.width / 2 - spacing / 2
+        height = borders.height / 2 - spacing / 2
+        position(curwin, left, top, width, height)
+    end,
+    righttop = function ()
+        left   = borders.left + borders.width / 2 + spacing / 2
+        top    = borders.top
+        width  = borders.width / 2 - spacing / 2
+        height = borders.height / 2 - spacing / 2
+        position(curwin, left, top, width, height)
+    end,
+    rightbottom = function ()
+        left   = borders.left + borders.width / 2 + spacing / 2
+        top    = borders.top + borders.height / 2 + spacing / 2
+        width  = borders.width / 2 - spacing / 2
+        height = borders.height / 2 - spacing / 2
+        position(curwin, left, top, width, height)
+    end,
+    maximize = function ()
+        left   = screens[activescreen].x
+        top    = screens[activescreen].y
+        width  = screens[activescreen].w - 1 -- bug in my setup that causes the window to draw over the panel
+        height = screens[activescreen].h
+        position(curwin, left, top, width, height)
+    end,
+    large = function ()
+        left   = borders.left
+        top    = borders.top
+        width  = borders.width
+        height = borders.height
+        position(curwin, left, top, width, height)
+    end,
+    medium = function ()
+        left   = borders.left + borders.width * 0.1666
+        top    = borders.top + borders.height * 0.1666
+        width  = borders.width * 0.6666
+        height = borders.height * 0.6666
+        position(curwin, left, top, width, height)
+    end,
+    small = function ()
+        left   = borders.left + borders.width * 0.3333
+        top    = borders.top + borders.height * 0.3333
+        width  = borders.width * 0.3333
+        height = borders.height * 0.3333
+        position(curwin, left, top, width, height)
+    end
+}
+if methods[arg[1]] then
+    methods[arg[1]]()
+else
+    print(usage)
+end
