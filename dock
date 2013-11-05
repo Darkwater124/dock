@@ -2,8 +2,8 @@
 
 
 
-local margins = {50, 20, 50, 50} -- left top right bottom
-local spacing = 20
+local margins = {51, 31, 51, 59} -- left top right bottom
+local spacing = 50
 
 
 
@@ -21,9 +21,9 @@ Actions:
 
   maximize        maximize window (fullscreen)
 
-  large           maximize window (respect margins)
-  medium          66% of large
-  small           33% of large
+  large           scale window (respect margins)
+  medium
+  small
 ]]
 
 function trim(s)
@@ -157,17 +157,17 @@ local methods = {
         position(curwin, left, top, width, height)
     end,
     medium = function ()
-        left   = borders.left + borders.width * 0.1666
-        top    = borders.top + borders.height * 0.1666
-        width  = borders.width * 0.6666
-        height = borders.height * 0.6666
+        left   = borders.left + borders.width * 0.25
+        top    = borders.top + borders.height * 0.10
+        width  = borders.width * 0.50
+        height = borders.height * 0.80
         position(curwin, left, top, width, height)
     end,
     small = function ()
-        left   = borders.left + borders.width * 0.3333
-        top    = borders.top + borders.height * 0.3333
-        width  = borders.width * 0.3333
-        height = borders.height * 0.3333
+        left   = borders.left + borders.width * 0.375
+        top    = borders.top + borders.height * 0.325
+        width  = borders.width * 0.25
+        height = borders.height * 0.35
         position(curwin, left, top, width, height)
     end
 }
