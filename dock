@@ -24,6 +24,11 @@ Actions:
   large           scale window (respect margins)
   medium
   small
+
+  moveup          move window to other screen
+  movedown
+  moveleft
+  moveright
 ]]
 
 function trim(s)
@@ -168,6 +173,34 @@ local methods = {
         top    = borders.top + borders.height * 0.325
         width  = borders.width * 0.25
         height = borders.height * 0.35
+        position(curwin, left, top, width, height)
+    end,
+    moveup = function ()
+        left   = curwingeom.x
+        top    = curwingeom.y - screens[activescreen].h
+        width  = curwingeom.w
+        height = curwingeom.h
+        position(curwin, left, top, width, height)
+    end,
+    movedown = function ()
+        left   = curwingeom.x
+        top    = curwingeom.y + screens[activescreen].h
+        width  = curwingeom.w
+        height = curwingeom.h
+        position(curwin, left, top, width, height)
+    end,
+    moveleft = function ()
+        left   = curwingeom.x - screens[activescreen].w
+        top    = curwingeom.y
+        width  = curwingeom.w
+        height = curwingeom.h
+        position(curwin, left, top, width, height)
+    end,
+    moveright = function ()
+        left   = curwingeom.x + screens[activescreen].w
+        top    = curwingeom.y
+        width  = curwingeom.w
+        height = curwingeom.h
         position(curwin, left, top, width, height)
     end
 }
