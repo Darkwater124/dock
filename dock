@@ -150,8 +150,8 @@ local methods = {
     maximize = function ()
         left   = screens[activescreen].x
         top    = screens[activescreen].y
-        width  = screens[activescreen].w - 1 -- bug in my setup that causes the window to draw over the panel
-        height = screens[activescreen].h
+        width  = screens[activescreen].w
+        height = screens[activescreen].h - 35
         position(curwin, left, top, width, height)
     end,
     large = function ()
